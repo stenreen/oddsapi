@@ -1,0 +1,56 @@
+name: Daily The Odds API scrape
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 8 * * *"
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Check required secrets
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          THEODDS_API_KEY: ${{ secrets.THEODDS_API_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "SUPABASE_URL saknas"
+            exit 1
+          fi
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "SUPABASE_SERVICE_ROLE_KEY saknas"
+            exit 1
+          fi
+          if [ -z "$THEODDS_API_KEY" ]; then
+            echo "THEODDS_API_KEY saknas"
+            exit 1
+          fi
+          echo "Secrets ser OK ut"
+
+      - name: Run scraper
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          THEODDS_API_KEY: ${{ secrets.THEODDS_API_KEY }}
+          LEAGUE_KEYS: "soccer_epl,soccer_spain_la_liga,soccer_italy_serie_a,soccer_germany_bundesliga,soccer_france_ligue_one,soccer_sweden_allsvenskan"
+          REGIONS: "eu"
+          MARKETS: "h2h"
+          ODDS_FORMAT: "decimal"
+          DATE_FORMAT: "iso"
+          LOOKAHEAD_HOURS: "168"
+        run: npm run scrape
